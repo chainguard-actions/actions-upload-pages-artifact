@@ -1,7 +1,0 @@
-{
-  "owner": "actions",
-  "name": "upload-pages-artifact",
-  "visibility": "public",
-  "description": "A composite action for packaging and uploading an artifact that can be deployed to GitHub Pages.",
-  "block_publish": false
-}
