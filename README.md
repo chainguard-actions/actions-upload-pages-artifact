@@ -9,6 +9,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
 | v4.0.0 | [`v4.0.0`](https://github.com/chainguard-actions/actions-upload-pages-artifact/tree/v4.0.0) | [`7b1f4a7`](https://github.com/actions/upload-pages-artifact/commit/7b1f4a764d45c48632c6b24a0339c27f5614fb0b) |
+| v5.0.0 | [`v5.0.0`](https://github.com/chainguard-actions/actions-upload-pages-artifact/tree/v5.0.0) | [`fc324d3`](https://github.com/actions/upload-pages-artifact/commit/fc324d3547104276b827a68afc52ff2a11cc49c9) |
 
 ## Privacy
 
