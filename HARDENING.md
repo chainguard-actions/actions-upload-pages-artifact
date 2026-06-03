@@ -14,13 +14,13 @@ Action **actions--upload-pages-artifact/v5.0.0** was hardened automatically. 4 f
 
 ### script-injection (severity: high)
 
-Three `run:` steps in action.yml directly interpolate the attacker-controlled expression `${{ inputs.include-hidden-files != 'true' && '--exclude=.[^/]*' || '' }}` inside shell commands. An attacker supplying a crafted value for the `include-hidden-files` input could inject arbitrary shell commands. The value must be assigned to an environment variable via `env:` and referenced as `$ENV_VAR` in the shell, rather than being interpolated directly into the `run:` block.
+In all three 'Archive artifact' run: steps (Linux, macOS, Windows), the attacker-controlled input `inputs.include-hidden-files` is interpolated directly into the shell command string via `${{ inputs.include-hidden-files != 'true' && '--exclude=.[^/]*' || '' }}`. This is not routed through an `env:` variable first, meaning a malicious caller can supply a crafted value for `include-hidden-files` that breaks out of the expression context and injects arbitrary shell commands. The safe pattern would be to assign the input to an env var and evaluate it in shell logic instead.
 
 Locations:
 
-- `action.yml:38`
-- `action.yml:54`
-- `action.yml:70`
+- `action.yml:37`
+- `action.yml:50`
+- `action.yml:65`
 
 ### static-inline-injection (severity: high)
 
@@ -54,5 +54,5 @@ Locations:
 
 **Notes:**
 
-Fixed all three occurrences of script injection in action.yml (Linux, macOS, and Windows Archive artifact steps). The GitHub Actions expression `${{ inputs.include-hidden-files != 'true' && '--exclude=.[^/]*' || '' }}` was removed from all `run:` blocks and moved to an `env:` variable `EXCLUDE_HIDDEN_FILES_FLAG` in each step. In the shell scripts, the variable is referenced as `${EXCLUDE_HIDDEN_FILES_FLAG:+"$EXCLUDE_HIDDEN_FILES_FLAG"}` which safely expands to the value only when non-empty, preventing word-splitting and shell injection attacks.
+Fixed script injection in all three 'Archive artifact' steps (Linux, macOS, Windows) in action.yml. The attacker-controlled `${{ inputs.include-hidden-files != 'true' && '--exclude=.[^/]*' || '' }}` expression was removed from all three run: blocks. Instead, each step now maps `inputs.include-hidden-files` to an `INCLUDE_HIDDEN_FILES` env variable, and uses shell if/else logic to set a local `EXCLUDE_HIDDEN` variable that is safely passed to the tar command. This eliminates the shell injection vector in all three locations.
 
