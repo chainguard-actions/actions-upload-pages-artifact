@@ -1,0 +1,46 @@
+name: Test custom artifact name
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory
+        run: |
+          mkdir -p my-site
+          echo "<html><body>Custom Name Test</body></html>" > my-site/index.html
+          echo "Custom artifact name test" > my-site/readme.txt
+
+      - id: action
+        uses: .
+        with:
+          name: my-custom-pages
+          path: my-site/
+        continue-on-error: true
+
+      - name: Assert tar archive was created
+        run: |
+          TAR_PATH="$RUNNER_TEMP/artifact.tar"
+          echo "Checking for tar at: $TAR_PATH"
+          if [ ! -f "$TAR_PATH" ]; then
+            echo "FAIL: artifact.tar was not created at $TAR_PATH"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+      - name: Assert tar contains expected files
+        run: |
+          TAR_PATH="$RUNNER_TEMP/artifact.tar"
+          echo "Contents of artifact.tar:"
+          tar -tvf "$TAR_PATH"
+          if ! tar -tvf "$TAR_PATH" | grep -q "index.html"; then
+            echo "FAIL: index.html not found in archive"
+            exit 1
+          fi
+          if ! tar -tvf "$TAR_PATH" | grep -q "readme.txt"; then
+            echo "FAIL: readme.txt not found in archive"
+            exit 1
+          fi
+          echo "PASS: all expected files found in archive"

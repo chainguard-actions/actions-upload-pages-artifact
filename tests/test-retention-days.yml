@@ -1,0 +1,58 @@
+name: Test custom retention days and nested directories
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site with nested directories
+        run: |
+          mkdir -p site/css
+          mkdir -p site/js
+          mkdir -p site/images
+          echo "<html><body>Retention Test</body></html>" > site/index.html
+          echo "body { margin: 0; }" > site/css/main.css
+          echo "console.log('hello');" > site/js/app.js
+          echo "placeholder" > site/images/logo.png
+
+      - id: action
+        uses: .
+        with:
+          name: github-pages
+          path: site/
+          retention-days: "7"
+        continue-on-error: true
+
+      - name: Assert tar archive was created
+        run: |
+          TAR_PATH="$RUNNER_TEMP/artifact.tar"
+          echo "Checking for tar at: $TAR_PATH"
+          if [ ! -f "$TAR_PATH" ]; then
+            echo "FAIL: artifact.tar was not created at $TAR_PATH"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+      - name: Assert tar contains nested files
+        run: |
+          TAR_PATH="$RUNNER_TEMP/artifact.tar"
+          echo "Contents of artifact.tar:"
+          tar -tvf "$TAR_PATH"
+          for expected in "index.html" "css/main.css" "js/app.js" "images/logo.png"; do
+            if ! tar -tvf "$TAR_PATH" | grep -q "$expected"; then
+              echo "FAIL: $expected not found in archive"
+              exit 1
+            fi
+            echo "PASS: $expected found in archive"
+          done
+
+      - name: Assert tar excludes .github
+        run: |
+          TAR_PATH="$RUNNER_TEMP/artifact.tar"
+          if tar -tvf "$TAR_PATH" | grep -q "\.github"; then
+            echo "FAIL: .github directory should be excluded from archive"
+            exit 1
+          fi
+          echo "PASS: .github excluded from archive"

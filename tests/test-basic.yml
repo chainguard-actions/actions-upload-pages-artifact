@@ -1,0 +1,58 @@
+name: Test basic usage - default artifact name
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory
+        run: |
+          mkdir -p _site
+          echo "<html><body>Hello Pages</body></html>" > _site/index.html
+          echo "body { color: red; }" > _site/style.css
+
+      - name: Verify site directory exists
+        run: |
+          if [ ! -f "_site/index.html" ]; then
+            echo "FAIL: _site/index.html not found"
+            exit 1
+          fi
+          echo "PASS: site directory ready"
+
+      - id: action
+        uses: .
+        with:
+          path: _site/
+        continue-on-error: true
+
+      - name: Assert tar archive was created
+        run: |
+          TAR_PATH="$RUNNER_TEMP/artifact.tar"
+          echo "Checking for tar at: $TAR_PATH"
+          if [ ! -f "$TAR_PATH" ]; then
+            echo "FAIL: artifact.tar was not created at $TAR_PATH"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+      - name: Assert tar contains expected files
+        run: |
+          TAR_PATH="$RUNNER_TEMP/artifact.tar"
+          echo "Contents of artifact.tar:"
+          tar -tvf "$TAR_PATH"
+          if ! tar -tvf "$TAR_PATH" | grep -q "index.html"; then
+            echo "FAIL: index.html not found in archive"
+            exit 1
+          fi
+          echo "PASS: index.html found in archive"
+
+      - name: Assert tar excludes .git
+        run: |
+          TAR_PATH="$RUNNER_TEMP/artifact.tar"
+          if tar -tvf "$TAR_PATH" | grep -q "\.git"; then
+            echo "FAIL: .git directory should be excluded from archive"
+            exit 1
+          fi
+          echo "PASS: .git excluded from archive"
