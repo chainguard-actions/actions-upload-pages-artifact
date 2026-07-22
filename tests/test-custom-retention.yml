@@ -1,4 +1,4 @@
-name: Test custom artifact name
+name: Test custom retention days
 on:
   workflow_dispatch:
 jobs:
@@ -9,14 +9,16 @@ jobs:
 
       - name: Create static site directory
         run: |
-          mkdir -p my-site
-          echo "<html><body>Custom Name Test</body></html>" > my-site/index.html
+          mkdir -p dist
+          echo "<html><body>Retention Test</body></html>" > dist/index.html
+          echo "Custom retention days test" > dist/readme.txt
 
       - id: action
         uses: .
         with:
-          name: my-custom-pages-artifact
-          path: my-site/
+          name: pages-retention-test
+          path: dist/
+          retention-days: "7"
 
       - name: Assert artifact_id is non-empty
         env:
@@ -24,7 +26,7 @@ jobs:
         run: |
           echo "actual artifact_id: $ACTUAL"
           if [ -z "$ACTUAL" ]; then
-            echo "FAIL: expected artifact_id to be non-empty when using custom name"
+            echo "FAIL: expected artifact_id to be non-empty when using custom retention-days"
             exit 1
           fi
           echo "PASS: artifact_id=$ACTUAL"
