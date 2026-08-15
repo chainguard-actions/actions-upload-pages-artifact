@@ -47,11 +47,6 @@ runs:
       if: runner.os == 'Linux'
       run: |
         echo ::group::Archive artifact
-        if [ "$INCLUDE_HIDDEN_FILES" != "true" ]; then
-          EXCLUDE_HIDDEN="--exclude=.[^/]*"
-        else
-          EXCLUDE_HIDDEN=""
-        fi
         tar \
           --dereference --hard-dereference \
           --directory "$INPUT_PATH" \
@@ -63,18 +58,13 @@ runs:
         echo ::endgroup::
       env:
         INPUT_PATH: ${{ inputs.path }}
-        INCLUDE_HIDDEN_FILES: ${{ inputs.include-hidden-files }}
+        EXCLUDE_HIDDEN: ${{ inputs.include-hidden-files != 'true' && '--exclude=.[^/]*' || '' }}
     # Switch to gtar (GNU tar instead of bsdtar which is the default in the MacOS runners so we can use --hard-dereference)
     - name: Archive artifact
       shell: sh
       if: runner.os == 'macOS'
       run: |
         echo ::group::Archive artifact
-        if [ "$INCLUDE_HIDDEN_FILES" != "true" ]; then
-          EXCLUDE_HIDDEN="--exclude=.[^/]*"
-        else
-          EXCLUDE_HIDDEN=""
-        fi
         gtar \
           --dereference --hard-dereference \
           --directory "$INPUT_PATH" \
@@ -86,18 +76,13 @@ runs:
         echo ::endgroup::
       env:
         INPUT_PATH: ${{ inputs.path }}
-        INCLUDE_HIDDEN_FILES: ${{ inputs.include-hidden-files }}
+        EXCLUDE_HIDDEN: ${{ inputs.include-hidden-files != 'true' && '--exclude=.[^/]*' || '' }}
     # Massage the paths for Windows only
     - name: Archive artifact
       shell: bash
       if: runner.os == 'Windows'
       run: |
         echo ::group::Archive artifact
-        if [ "$INCLUDE_HIDDEN_FILES" != "true" ]; then
-          EXCLUDE_HIDDEN="--exclude=.[^/]*"
-        else
-          EXCLUDE_HIDDEN=""
-        fi
         tar \
           --dereference --hard-dereference \
           --directory "$INPUT_PATH" \
@@ -110,7 +95,7 @@ runs:
         echo ::endgroup::
       env:
         INPUT_PATH: ${{ inputs.path }}
-        INCLUDE_HIDDEN_FILES: ${{ inputs.include-hidden-files }}
+        EXCLUDE_HIDDEN: ${{ inputs.include-hidden-files != 'true' && '--exclude=.[^/]*' || '' }}
     - name: Upload artifact
       id: upload-artifact
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0

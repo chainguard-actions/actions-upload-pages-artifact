@@ -1,0 +1,47 @@
+name: Test include hidden files
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory with hidden files
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/site-with-hidden"
+          echo "<html><body>Hidden Files Test</body></html>" > "$GITHUB_WORKSPACE/site-with-hidden/index.html"
+          echo "hidden content" > "$GITHUB_WORKSPACE/site-with-hidden/.hidden-file"
+          mkdir -p "$GITHUB_WORKSPACE/site-with-hidden/.hidden-dir"
+          echo "hidden dir content" > "$GITHUB_WORKSPACE/site-with-hidden/.hidden-dir/data.txt"
+
+      - id: action
+        uses: .
+        with:
+          name: pages-with-hidden
+          path: site-with-hidden/
+          include-hidden-files: "true"
+        continue-on-error: true
+
+      - name: Assert artifact tar was created
+        run: |
+          echo "Checking for artifact.tar in RUNNER_TEMP: $RUNNER_TEMP"
+          if [ ! -f "$RUNNER_TEMP/artifact.tar" ]; then
+            echo "FAIL: artifact.tar was not created in RUNNER_TEMP"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+      - name: Assert artifact tar contains hidden files
+        run: |
+          echo "Listing contents of artifact.tar:"
+          tar -tvf "$RUNNER_TEMP/artifact.tar"
+          if ! tar -tvf "$RUNNER_TEMP/artifact.tar" | grep -q "\.hidden-file"; then
+            echo "FAIL: .hidden-file not found in artifact.tar (include-hidden-files=true should include it)"
+            exit 1
+          fi
+          if ! tar -tvf "$RUNNER_TEMP/artifact.tar" | grep -q "\.hidden-dir"; then
+            echo "FAIL: .hidden-dir not found in artifact.tar (include-hidden-files=true should include it)"
+            exit 1
+          fi
+          echo "PASS: artifact.tar contains hidden files as expected"

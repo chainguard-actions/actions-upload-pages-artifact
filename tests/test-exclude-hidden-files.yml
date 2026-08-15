@@ -1,0 +1,47 @@
+name: Test exclude hidden files by default
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory with hidden files
+        run: |
+          mkdir -p dist
+          echo "<html><body>Exclude Hidden Test</body></html>" > dist/index.html
+          echo "hidden content" > dist/.hidden-file
+          mkdir -p dist/.hidden-dir
+          echo "hidden dir content" > dist/.hidden-dir/data.txt
+
+      - id: action
+        uses: .
+        with:
+          path: dist/
+          include-hidden-files: "false"
+        continue-on-error: true
+
+      - name: Verify artifact tar was created
+        run: |
+          if [ ! -f "$RUNNER_TEMP/artifact.tar" ]; then
+            echo "FAIL: artifact.tar was not created at $RUNNER_TEMP/artifact.tar"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+      - name: Verify hidden files are NOT in the archive
+        run: |
+          if tar -tf "$RUNNER_TEMP/artifact.tar" | grep -q "\.hidden-file"; then
+            echo "FAIL: .hidden-file should not be in archive when include-hidden-files is false"
+            exit 1
+          fi
+          echo "PASS: hidden file correctly excluded from archive"
+
+      - name: Verify regular files ARE in the archive
+        run: |
+          if ! tar -tf "$RUNNER_TEMP/artifact.tar" | grep -q "index.html"; then
+            echo "FAIL: index.html should be in archive"
+            exit 1
+          fi
+          echo "PASS: index.html found in archive"
