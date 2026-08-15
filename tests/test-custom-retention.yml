@@ -1,0 +1,43 @@
+name: Test custom retention days
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory
+        run: |
+          mkdir -p dist
+          echo "<html><body>Retention Test</body></html>" > dist/index.html
+          echo "console.log('hello');" > dist/app.js
+
+      - id: action
+        uses: .
+        with:
+          path: dist/
+          retention-days: "7"
+
+      - name: Assert artifact tar was created
+        run: |
+          echo "Checking artifact tar exists in RUNNER_TEMP..."
+          if [ ! -f "$RUNNER_TEMP/artifact.tar" ]; then
+            echo "FAIL: artifact.tar was not created at $RUNNER_TEMP/artifact.tar"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+      - name: Assert tar contains expected files
+        run: |
+          echo "Listing tar contents..."
+          tar -tvf "$RUNNER_TEMP/artifact.tar"
+          if ! tar -tvf "$RUNNER_TEMP/artifact.tar" | grep -q "index.html"; then
+            echo "FAIL: index.html not found in artifact.tar"
+            exit 1
+          fi
+          if ! tar -tvf "$RUNNER_TEMP/artifact.tar" | grep -q "app.js"; then
+            echo "FAIL: app.js not found in artifact.tar"
+            exit 1
+          fi
+          echo "PASS: tar contains expected files"

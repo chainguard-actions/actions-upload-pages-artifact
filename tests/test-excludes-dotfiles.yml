@@ -1,0 +1,51 @@
+name: Test that dotfiles and .git are excluded from archive
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory with dotfiles
+        run: |
+          mkdir -p site
+          echo "<html><body>Dotfile Exclusion Test</body></html>" > site/index.html
+          echo "secret" > site/.env
+          echo "ignore me" > site/.hidden
+          mkdir -p site/.git
+          echo "not a real git object" > site/.git/HEAD
+
+      - id: action
+        uses: .
+        with:
+          path: site/
+
+      - name: Assert artifact_id is non-empty
+        env:
+          ARTIFACT_ID: ${{ steps.action.outputs.artifact_id }}
+        run: |
+          echo "artifact_id: $ARTIFACT_ID"
+          if [ -z "$ARTIFACT_ID" ]; then
+            echo "FAIL: artifact_id output is empty"
+            exit 1
+          fi
+          echo "PASS: artifact_id=$ARTIFACT_ID"
+
+      - name: Assert dotfiles are excluded from archive
+        run: |
+          echo "Listing archive contents:"
+          tar -tvf "$RUNNER_TEMP/artifact.tar"
+          if tar -tvf "$RUNNER_TEMP/artifact.tar" | grep -E '^\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\./\.'; then
+            echo "FAIL: dotfiles found in archive"
+            exit 1
+          fi
+          echo "PASS: no dotfiles in archive"
+
+      - name: Assert index.html is included in archive
+        run: |
+          if ! tar -tvf "$RUNNER_TEMP/artifact.tar" | grep -q 'index.html'; then
+            echo "FAIL: index.html not found in archive"
+            exit 1
+          fi
+          echo "PASS: index.html present in archive"

@@ -1,0 +1,76 @@
+name: Test tar archive creation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory with multiple files
+        run: |
+          mkdir -p _site/subdir
+          echo "<html><body>Index</body></html>" > _site/index.html
+          echo "body { color: blue; }" > _site/style.css
+          echo "console.log('hello');" > _site/subdir/app.js
+          # Create a dotfile that should be excluded from the archive
+          echo "secret" > _site/.hidden
+
+      - name: Archive artifact manually to verify tar works
+        run: |
+          tar \
+            --dereference --hard-dereference \
+            --directory "_site/" \
+            -cvf "$RUNNER_TEMP/test-artifact.tar" \
+            --exclude=.git \
+            --exclude=.github \
+            --exclude=".[^/]*" \
+            .
+          echo "Tar created successfully"
+
+      - name: Verify tar contents
+        run: |
+          echo "Contents of tar archive:"
+          tar -tvf "$RUNNER_TEMP/test-artifact.tar"
+
+          # Verify expected files are present
+          if ! tar -tvf "$RUNNER_TEMP/test-artifact.tar" | grep -q "index.html"; then
+            echo "FAIL: index.html not found in archive"
+            exit 1
+          fi
+          echo "PASS: index.html found in archive"
+
+          if ! tar -tvf "$RUNNER_TEMP/test-artifact.tar" | grep -q "style.css"; then
+            echo "FAIL: style.css not found in archive"
+            exit 1
+          fi
+          echo "PASS: style.css found in archive"
+
+          if ! tar -tvf "$RUNNER_TEMP/test-artifact.tar" | grep -q "subdir/app.js"; then
+            echo "FAIL: subdir/app.js not found in archive"
+            exit 1
+          fi
+          echo "PASS: subdir/app.js found in archive"
+
+          # Verify dotfiles are excluded
+          if tar -tvf "$RUNNER_TEMP/test-artifact.tar" | grep -q "\.hidden"; then
+            echo "FAIL: .hidden dotfile should be excluded from archive"
+            exit 1
+          fi
+          echo "PASS: dotfile correctly excluded from archive"
+
+      - id: action
+        uses: .
+        with:
+          path: _site/
+
+      - name: Assert artifact_id is set
+        env:
+          ARTIFACT_ID: ${{ steps.action.outputs.artifact_id }}
+        run: |
+          echo "artifact_id: $ARTIFACT_ID"
+          if [ -z "$ARTIFACT_ID" ]; then
+            echo "FAIL: artifact_id output is empty"
+            exit 1
+          fi
+          echo "PASS"

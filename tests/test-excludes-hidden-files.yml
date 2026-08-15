@@ -1,0 +1,66 @@
+name: Test hidden files and .git/.github are excluded from archive
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create site directory with hidden and excluded files
+        run: |
+          mkdir -p public
+          echo "<html><body>Public Site</body></html>" > public/index.html
+          # Create hidden files that should be excluded
+          echo "secret" > public/.env
+          echo "hidden" > public/.hidden-file
+          mkdir -p public/.git
+          echo "not a real git" > public/.git/config
+          mkdir -p public/.github
+          echo "workflow" > public/.github/workflow.yml
+
+      - id: action
+        uses: .
+        with:
+          path: public/
+
+      - name: Assert artifact_id is set (archive succeeded despite hidden files)
+        env:
+          ACTUAL: ${{ steps.action.outputs.artifact_id }}
+        run: |
+          echo "artifact_id: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: artifact_id output is empty"
+            exit 1
+          fi
+          echo "PASS: artifact_id=$ACTUAL"
+
+      - name: Verify archive excludes hidden files
+        run: |
+          # Extract the tar and verify hidden files are not present
+          mkdir -p /tmp/extracted
+          tar -xf "$RUNNER_TEMP/artifact.tar" -C /tmp/extracted 2>/dev/null || true
+          echo "Contents of extracted archive:"
+          ls -la /tmp/extracted/
+
+          if [ -f "/tmp/extracted/.env" ]; then
+            echo "FAIL: .env should have been excluded from archive"
+            exit 1
+          fi
+          if [ -f "/tmp/extracted/.hidden-file" ]; then
+            echo "FAIL: .hidden-file should have been excluded from archive"
+            exit 1
+          fi
+          if [ -d "/tmp/extracted/.git" ]; then
+            echo "FAIL: .git directory should have been excluded from archive"
+            exit 1
+          fi
+          if [ -d "/tmp/extracted/.github" ]; then
+            echo "FAIL: .github directory should have been excluded from archive"
+            exit 1
+          fi
+          if [ ! -f "/tmp/extracted/index.html" ]; then
+            echo "FAIL: index.html should be present in archive"
+            exit 1
+          fi
+          echo "PASS: hidden files and .git/.github correctly excluded"

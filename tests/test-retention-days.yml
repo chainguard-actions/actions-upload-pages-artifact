@@ -1,0 +1,31 @@
+name: Test custom retention days
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory
+        run: |
+          mkdir -p public
+          echo "<html><body>Retention Days Test</body></html>" > public/index.html
+          echo "Custom retention days test" > public/readme.txt
+
+      - id: action
+        uses: .
+        with:
+          path: public/
+          retention-days: "7"
+
+      - name: Assert artifact_id is set
+        env:
+          ACTUAL: ${{ steps.action.outputs.artifact_id }}
+        run: |
+          echo "artifact_id: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: artifact_id output is empty when using custom retention days"
+            exit 1
+          fi
+          echo "PASS: artifact_id is set to '$ACTUAL' with custom retention days"

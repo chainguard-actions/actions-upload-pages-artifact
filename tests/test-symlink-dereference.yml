@@ -1,0 +1,57 @@
+name: Test symlink dereferencing in archive
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create static site directory with symlinks
+        run: |
+          mkdir -p site
+          echo "<html><body>Symlink Test</body></html>" > site/index.html
+          # Create a symlink inside the site directory
+          ln -s index.html site/home.html
+
+      - id: action
+        uses: .
+        with:
+          path: site/
+
+      - name: Assert tar archive was created
+        run: |
+          TAR_PATH="$RUNNER_TEMP/artifact.tar"
+          if [ ! -f "$TAR_PATH" ]; then
+            echo "FAIL: artifact.tar was not created at $RUNNER_TEMP"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+      - name: Assert symlink target is included in archive
+        run: |
+          TAR_PATH="$RUNNER_TEMP/artifact.tar"
+          echo "Contents of artifact.tar:"
+          tar -tvf "$TAR_PATH"
+          # home.html should be present (dereferenced from symlink)
+          if ! tar -tvf "$TAR_PATH" | grep -q "home.html"; then
+            echo "FAIL: home.html (symlink target) not found in archive"
+            exit 1
+          fi
+          echo "PASS: symlink-derived file found in archive"
+
+      - name: Assert archive can be extracted cleanly
+        run: |
+          TAR_PATH="$RUNNER_TEMP/artifact.tar"
+          EXTRACT_DIR="$RUNNER_TEMP/extracted"
+          mkdir -p "$EXTRACT_DIR"
+          tar -xf "$TAR_PATH" -C "$EXTRACT_DIR"
+          if [ ! -f "$EXTRACT_DIR/index.html" ]; then
+            echo "FAIL: index.html not found after extraction"
+            exit 1
+          fi
+          if [ ! -f "$EXTRACT_DIR/home.html" ]; then
+            echo "FAIL: home.html not found after extraction"
+            exit 1
+          fi
+          echo "PASS: archive extracts cleanly with all expected files"

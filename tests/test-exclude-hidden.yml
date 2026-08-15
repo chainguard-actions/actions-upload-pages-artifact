@@ -1,0 +1,65 @@
+name: Test hidden files excluded
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory with hidden files
+        run: |
+          mkdir -p /tmp/test-site-hidden
+          echo "<html><body>Hello</body></html>" > /tmp/test-site-hidden/index.html
+          echo "secret" > /tmp/test-site-hidden/.env
+          echo "also secret" > /tmp/test-site-hidden/.htaccess
+          mkdir -p /tmp/test-site-hidden/.github
+          echo "workflow" > /tmp/test-site-hidden/.github/workflow.yml
+          echo "Listed site directory:"
+          ls -la /tmp/test-site-hidden/
+
+      - id: action
+        uses: .
+        with:
+          path: /tmp/test-site-hidden/
+          name: github-pages-hidden-test
+          retention-days: "1"
+
+      - name: Verify tar was created
+        run: |
+          if [ ! -f "$RUNNER_TEMP/artifact.tar" ]; then
+            echo "FAIL: artifact.tar was not created"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+      - name: Verify hidden files are excluded
+        run: |
+          echo "Tar contents:"
+          tar -tvf "$RUNNER_TEMP/artifact.tar"
+          # .env should be excluded
+          if tar -tvf "$RUNNER_TEMP/artifact.tar" | grep -q "\.env"; then
+            echo "FAIL: .env should be excluded from archive"
+            exit 1
+          fi
+          echo "PASS: .env excluded"
+          # .htaccess should be excluded
+          if tar -tvf "$RUNNER_TEMP/artifact.tar" | grep -q "\.htaccess"; then
+            echo "FAIL: .htaccess should be excluded from archive"
+            exit 1
+          fi
+          echo "PASS: .htaccess excluded"
+          # .github should be excluded
+          if tar -tvf "$RUNNER_TEMP/artifact.tar" | grep -q "\.github"; then
+            echo "FAIL: .github should be excluded from archive"
+            exit 1
+          fi
+          echo "PASS: .github excluded"
+
+      - name: Verify index.html is included
+        run: |
+          if ! tar -tvf "$RUNNER_TEMP/artifact.tar" | grep -q "index.html"; then
+            echo "FAIL: index.html should be included in archive"
+            exit 1
+          fi
+          echo "PASS: index.html included in archive"

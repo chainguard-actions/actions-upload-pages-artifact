@@ -1,0 +1,30 @@
+name: Test basic upload-pages-artifact usage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory
+        run: |
+          mkdir -p _site
+          echo "<html><body>Hello Pages</body></html>" > _site/index.html
+          echo "body { color: red; }" > _site/style.css
+
+      - id: action
+        uses: .
+        with:
+          path: _site/
+
+      - name: Assert artifact_id is non-empty
+        env:
+          ACTUAL: ${{ steps.action.outputs.artifact_id }}
+        run: |
+          echo "actual artifact_id: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected artifact_id to be non-empty"
+            exit 1
+          fi
+          echo "PASS: artifact_id=$ACTUAL"

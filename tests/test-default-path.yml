@@ -1,0 +1,48 @@
+name: Test default _site path
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create default _site directory
+        run: |
+          mkdir -p _site
+          echo "<html><body>Default Site</body></html>" > _site/index.html
+          echo "robots: none" > _site/robots.txt
+
+      - id: action
+        uses: .
+        # No 'path' input — uses default '_site/'
+
+      - name: Assert artifact_id is set
+        env:
+          ARTIFACT_ID: ${{ steps.action.outputs.artifact_id }}
+        run: |
+          echo "artifact_id: $ARTIFACT_ID"
+          if [ -z "$ARTIFACT_ID" ]; then
+            echo "FAIL: artifact_id output is empty"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Verify tar archive was created for default path
+        run: |
+          TAR_FILE="$RUNNER_TEMP/artifact.tar"
+          echo "Checking tar file exists at: $TAR_FILE"
+          if [ ! -f "$TAR_FILE" ]; then
+            echo "FAIL: artifact.tar was not created"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+          echo "Listing tar contents:"
+          tar -tvf "$TAR_FILE"
+
+          if ! tar -tvf "$TAR_FILE" | grep -q "index.html"; then
+            echo "FAIL: index.html should be in the archive"
+            exit 1
+          fi
+          echo "PASS: index.html is in archive"

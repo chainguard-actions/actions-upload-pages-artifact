@@ -1,0 +1,36 @@
+name: Test upload-pages-artifact with custom name and retention
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory with nested content
+        run: |
+          mkdir -p my-site/subdir
+          echo "<html><body>Custom Name Test</body></html>" > my-site/index.html
+          echo "nested content" > my-site/subdir/page.html
+          # Create a hidden file and .git dir that should be excluded by the action
+          mkdir -p my-site/.git
+          echo "should be excluded" > my-site/.git/config
+          echo "also excluded" > my-site/.hidden
+
+      - id: action
+        uses: .
+        with:
+          name: my-custom-pages-artifact
+          path: my-site/
+          retention-days: 1
+
+      - name: Assert artifact_id is non-empty
+        env:
+          ACTUAL: ${{ steps.action.outputs.artifact_id }}
+        run: |
+          echo "actual artifact_id: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected artifact_id to be non-empty with custom name"
+            exit 1
+          fi
+          echo "PASS: artifact_id=$ACTUAL"

@@ -1,0 +1,66 @@
+name: Test archive excludes hidden files and git directories
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory with hidden files
+        run: |
+          mkdir -p /tmp/pages-site
+          echo "<html><body>Pages</body></html>" > /tmp/pages-site/index.html
+          echo "visible content" > /tmp/pages-site/visible.txt
+          # Create hidden files that should be excluded
+          echo "hidden" > /tmp/pages-site/.hidden-file
+          mkdir -p /tmp/pages-site/.git
+          echo "git content" > /tmp/pages-site/.git/config
+          mkdir -p /tmp/pages-site/.github
+          echo "github content" > /tmp/pages-site/.github/workflows.yml
+
+      - id: action
+        uses: .
+        with:
+          path: /tmp/pages-site/
+
+      - name: Verify tar archive was created and excludes hidden files
+        run: |
+          TAR_FILE="$RUNNER_TEMP/artifact.tar"
+          echo "Checking tar file exists at: $TAR_FILE"
+          if [ ! -f "$TAR_FILE" ]; then
+            echo "FAIL: artifact.tar was not created at $TAR_FILE"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+          echo "Listing tar contents:"
+          tar -tvf "$TAR_FILE"
+
+          # Verify visible files are included
+          if ! tar -tvf "$TAR_FILE" | grep -q "visible.txt"; then
+            echo "FAIL: visible.txt should be in the archive"
+            exit 1
+          fi
+          echo "PASS: visible.txt is in archive"
+
+          # Verify hidden files are excluded
+          if tar -tvf "$TAR_FILE" | grep -q "\.hidden-file"; then
+            echo "FAIL: .hidden-file should be excluded from archive"
+            exit 1
+          fi
+          echo "PASS: .hidden-file is excluded"
+
+          # Verify .git directory is excluded
+          if tar -tvf "$TAR_FILE" | grep -q "\.git"; then
+            echo "FAIL: .git directory should be excluded from archive"
+            exit 1
+          fi
+          echo "PASS: .git is excluded"
+
+          # Verify .github directory is excluded
+          if tar -tvf "$TAR_FILE" | grep -q "\.github"; then
+            echo "FAIL: .github directory should be excluded from archive"
+            exit 1
+          fi
+          echo "PASS: .github is excluded"

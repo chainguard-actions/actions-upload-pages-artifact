@@ -1,0 +1,68 @@
+name: Test git directories are excluded from archive
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory with git-like subdirs
+        run: |
+          mkdir -p /tmp/gitsite
+          echo "<html><body>Git Exclude Test</body></html>" > /tmp/gitsite/index.html
+          # Create .git and .github directories that should be excluded
+          mkdir -p /tmp/gitsite/.git
+          echo "ref: refs/heads/main" > /tmp/gitsite/.git/HEAD
+          mkdir -p /tmp/gitsite/.github
+          echo "# workflow" > /tmp/gitsite/.github/workflow.yml
+          # Create a hidden file that should also be excluded
+          echo "secret" > /tmp/gitsite/.env
+
+      - id: action
+        uses: .
+        with:
+          path: /tmp/gitsite/
+
+      - name: Assert tar archive was created
+        run: |
+          echo "Checking that artifact.tar was created in RUNNER_TEMP"
+          if [ ! -f "$RUNNER_TEMP/artifact.tar" ]; then
+            echo "FAIL: artifact.tar not found at $RUNNER_TEMP/artifact.tar"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+      - name: Assert index.html is included
+        run: |
+          echo "Listing contents of artifact.tar"
+          tar -tvf "$RUNNER_TEMP/artifact.tar"
+          if ! tar -tvf "$RUNNER_TEMP/artifact.tar" | grep -q "index.html"; then
+            echo "FAIL: index.html not found in artifact.tar"
+            exit 1
+          fi
+          echo "PASS: index.html found in archive"
+
+      - name: Assert .git directory is excluded
+        run: |
+          if tar -tvf "$RUNNER_TEMP/artifact.tar" | grep -q "\.git"; then
+            echo "FAIL: .git directory found in artifact.tar (should be excluded)"
+            exit 1
+          fi
+          echo "PASS: .git directory correctly excluded"
+
+      - name: Assert .github directory is excluded
+        run: |
+          if tar -tvf "$RUNNER_TEMP/artifact.tar" | grep -q "\.github"; then
+            echo "FAIL: .github directory found in artifact.tar (should be excluded)"
+            exit 1
+          fi
+          echo "PASS: .github directory correctly excluded"
+
+      - name: Assert hidden files are excluded
+        run: |
+          if tar -tvf "$RUNNER_TEMP/artifact.tar" | grep -qE "\./\.[^/]"; then
+            echo "FAIL: hidden files found in artifact.tar (should be excluded)"
+            exit 1
+          fi
+          echo "PASS: hidden files correctly excluded"
