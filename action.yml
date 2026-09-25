@@ -45,60 +45,75 @@ runs:
     - name: Archive artifact
       shell: sh
       if: runner.os == 'Linux'
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INCLUDE_HIDDEN_FILES: ${{ inputs.include-hidden-files }}
       run: |
         echo ::group::Archive artifact
+        if [ "$INCLUDE_HIDDEN_FILES" = "true" ]; then
+          EXCLUDE_HIDDEN=""
+        else
+          EXCLUDE_HIDDEN="--exclude=.[^/]*"
+        fi
         tar \
           --dereference --hard-dereference \
           --directory "$INPUT_PATH" \
           -cvf "$RUNNER_TEMP/artifact.tar" \
           --exclude=.git \
           --exclude=.github \
-          ${EXCLUDE_HIDDEN:+"$EXCLUDE_HIDDEN"} \
+          ${EXCLUDE_HIDDEN} \
           .
         echo ::endgroup::
-      env:
-        INPUT_PATH: ${{ inputs.path }}
-        EXCLUDE_HIDDEN: ${{ inputs.include-hidden-files != 'true' && '--exclude=.[^/]*' || '' }}
     # Switch to gtar (GNU tar instead of bsdtar which is the default in the MacOS runners so we can use --hard-dereference)
     - name: Archive artifact
       shell: sh
       if: runner.os == 'macOS'
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INCLUDE_HIDDEN_FILES: ${{ inputs.include-hidden-files }}
       run: |
         echo ::group::Archive artifact
+        if [ "$INCLUDE_HIDDEN_FILES" = "true" ]; then
+          EXCLUDE_HIDDEN=""
+        else
+          EXCLUDE_HIDDEN="--exclude=.[^/]*"
+        fi
         gtar \
           --dereference --hard-dereference \
           --directory "$INPUT_PATH" \
           -cvf "$RUNNER_TEMP/artifact.tar" \
           --exclude=.git \
           --exclude=.github \
-          ${EXCLUDE_HIDDEN:+"$EXCLUDE_HIDDEN"} \
+          ${EXCLUDE_HIDDEN} \
           .
         echo ::endgroup::
-      env:
-        INPUT_PATH: ${{ inputs.path }}
-        EXCLUDE_HIDDEN: ${{ inputs.include-hidden-files != 'true' && '--exclude=.[^/]*' || '' }}
     # Massage the paths for Windows only
     - name: Archive artifact
       shell: bash
       if: runner.os == 'Windows'
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INCLUDE_HIDDEN_FILES: ${{ inputs.include-hidden-files }}
       run: |
         echo ::group::Archive artifact
+        if [ "$INCLUDE_HIDDEN_FILES" = "true" ]; then
+          EXCLUDE_HIDDEN=""
+        else
+          EXCLUDE_HIDDEN="--exclude=.[^/]*"
+        fi
         tar \
           --dereference --hard-dereference \
           --directory "$INPUT_PATH" \
           -cvf "$RUNNER_TEMP\artifact.tar" \
           --exclude=.git \
           --exclude=.github \
-          ${EXCLUDE_HIDDEN:+"$EXCLUDE_HIDDEN"} \
+          ${EXCLUDE_HIDDEN} \
           --force-local \
           "."
         echo ::endgroup::
-      env:
-        INPUT_PATH: ${{ inputs.path }}
-        EXCLUDE_HIDDEN: ${{ inputs.include-hidden-files != 'true' && '--exclude=.[^/]*' || '' }}
     - name: Upload artifact
       id: upload-artifact
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      uses: chainguard-actions/actions-upload-artifact@92725eedb395cf0af79d9b2535e6042a23ec1436 # v7.0.0
       with:
         name: ${{ inputs.name }}
         path: ${{ runner.temp }}/artifact.tar
