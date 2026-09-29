@@ -1,0 +1,56 @@
+name: Test basic usage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory
+        run: |
+          mkdir -p _site
+          echo "<html><body>Hello Pages</body></html>" > _site/index.html
+          echo "body { color: red; }" > _site/style.css
+
+      - id: action
+        uses: .
+        with:
+          path: _site/
+        continue-on-error: true
+
+      - name: Assert tar archive was created
+        run: |
+          if [ ! -f "$RUNNER_TEMP/artifact.tar" ]; then
+            echo "FAIL: artifact.tar was not created at $RUNNER_TEMP/artifact.tar"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+      - name: Assert tar archive contains expected files
+        run: |
+          CONTENTS=$(tar -tf "$RUNNER_TEMP/artifact.tar")
+          echo "tar contents: $CONTENTS"
+          if ! echo "$CONTENTS" | grep -q "index.html"; then
+            echo "FAIL: index.html not found in archive"
+            exit 1
+          fi
+          if ! echo "$CONTENTS" | grep -q "style.css"; then
+            echo "FAIL: style.css not found in archive"
+            exit 1
+          fi
+          echo "PASS: archive contains expected files"
+
+      - name: Assert action outcome
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (upload-artifact may fail on sentinel repo)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

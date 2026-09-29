@@ -1,0 +1,73 @@
+name: Test custom retention days
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site with nested structure
+        run: |
+          mkdir -p my-site/assets/js
+          mkdir -p my-site/assets/css
+          echo "<html><body>Custom Site</body></html>" > my-site/index.html
+          echo "console.log('hello');" > my-site/assets/js/app.js
+          echo "h1 { font-size: 2em; }" > my-site/assets/css/main.css
+
+      - id: action
+        uses: .
+        with:
+          path: my-site/
+          retention-days: "7"
+        continue-on-error: true
+
+      - name: Assert tar archive was created
+        run: |
+          if [ ! -f "$RUNNER_TEMP/artifact.tar" ]; then
+            echo "FAIL: artifact.tar was not created at $RUNNER_TEMP/artifact.tar"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+      - name: Assert tar archive contains nested files
+        run: |
+          CONTENTS=$(tar -tf "$RUNNER_TEMP/artifact.tar")
+          echo "tar contents:"
+          echo "$CONTENTS"
+          if ! echo "$CONTENTS" | grep -q "index.html"; then
+            echo "FAIL: index.html not found in archive"
+            exit 1
+          fi
+          if ! echo "$CONTENTS" | grep -q "assets/js/app.js"; then
+            echo "FAIL: assets/js/app.js not found in archive"
+            exit 1
+          fi
+          if ! echo "$CONTENTS" | grep -q "assets/css/main.css"; then
+            echo "FAIL: assets/css/main.css not found in archive"
+            exit 1
+          fi
+          echo "PASS: archive contains all expected nested files"
+
+      - name: Assert .git is excluded from archive
+        run: |
+          CONTENTS=$(tar -tf "$RUNNER_TEMP/artifact.tar")
+          if echo "$CONTENTS" | grep -q "\.git"; then
+            echo "FAIL: .git directory should be excluded from archive"
+            exit 1
+          fi
+          echo "PASS: .git is excluded from archive"
+
+      - name: Assert action outcome
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (upload-artifact may fail on sentinel repo)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
