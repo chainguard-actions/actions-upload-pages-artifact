@@ -1,0 +1,64 @@
+name: Test nested directory structure
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create nested static site directory
+        run: |
+          mkdir -p dist/css dist/js dist/images
+          echo "<html><body>Nested Site</body></html>" > dist/index.html
+          echo "body { margin: 0; }" > dist/css/main.css
+          echo "console.log('hello');" > dist/js/app.js
+          echo "fake-image-data" > dist/images/logo.png
+          # Create a .github dir that should be excluded
+          mkdir -p dist/.github
+          echo "should-be-excluded" > dist/.github/excluded.txt
+
+      - id: action
+        uses: .
+        with:
+          path: dist/
+
+      - name: Assert artifact tar was created
+        run: |
+          if [ ! -f "$RUNNER_TEMP/artifact.tar" ]; then
+            echo "FAIL: artifact.tar was not created in RUNNER_TEMP"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+      - name: Assert tar contains all expected files
+        run: |
+          FILES=$(tar -tf "$RUNNER_TEMP/artifact.tar")
+          echo "Files in tar:"
+          echo "$FILES"
+
+          for expected in "index.html" "css/main.css" "js/app.js" "images/logo.png"; do
+            if ! echo "$FILES" | grep -q "$expected"; then
+              echo "FAIL: $expected not found in artifact.tar"
+              exit 1
+            fi
+          done
+          echo "PASS: all expected files found in artifact.tar"
+
+      - name: Assert .github is excluded from tar
+        run: |
+          FILES=$(tar -tf "$RUNNER_TEMP/artifact.tar")
+          if echo "$FILES" | grep -q "\.github"; then
+            echo "FAIL: .github directory should be excluded from artifact.tar"
+            exit 1
+          fi
+          echo "PASS: .github is excluded"
+
+      - name: Assert .git is excluded from tar
+        run: |
+          FILES=$(tar -tf "$RUNNER_TEMP/artifact.tar")
+          if echo "$FILES" | grep -q "\.git"; then
+            echo "FAIL: .git directory should be excluded from artifact.tar"
+            exit 1
+          fi
+          echo "PASS: .git is excluded"

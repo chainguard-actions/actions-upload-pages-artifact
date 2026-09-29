@@ -1,0 +1,50 @@
+name: Test basic usage - default artifact name
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory
+        run: |
+          mkdir -p _site
+          echo "<html><body>Hello Pages</body></html>" > _site/index.html
+          echo "body { color: red; }" > _site/style.css
+
+      - id: action
+        uses: .
+        with:
+          path: _site/
+
+      - name: Assert artifact tar was created
+        run: |
+          if [ ! -f "$RUNNER_TEMP/artifact.tar" ]; then
+            echo "FAIL: artifact.tar was not created in RUNNER_TEMP"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+      - name: Assert tar contains expected files
+        run: |
+          FILES=$(tar -tf "$RUNNER_TEMP/artifact.tar")
+          echo "Files in tar: $FILES"
+          if ! echo "$FILES" | grep -q "index.html"; then
+            echo "FAIL: index.html not found in artifact.tar"
+            exit 1
+          fi
+          if ! echo "$FILES" | grep -q "style.css"; then
+            echo "FAIL: style.css not found in artifact.tar"
+            exit 1
+          fi
+          echo "PASS: expected files found in artifact.tar"
+
+      - name: Assert .git is excluded from tar
+        run: |
+          FILES=$(tar -tf "$RUNNER_TEMP/artifact.tar")
+          if echo "$FILES" | grep -q "\.git"; then
+            echo "FAIL: .git directory should be excluded from artifact.tar"
+            exit 1
+          fi
+          echo "PASS: .git is excluded"

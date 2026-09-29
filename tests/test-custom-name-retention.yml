@@ -1,0 +1,38 @@
+name: Test custom artifact name and retention days
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create static site directory
+        run: |
+          mkdir -p my-site
+          echo "<html><body>Custom Site</body></html>" > my-site/index.html
+
+      - id: action
+        uses: .
+        with:
+          name: my-custom-pages
+          path: my-site/
+          retention-days: "3"
+
+      - name: Assert artifact tar was created
+        run: |
+          if [ ! -f "$RUNNER_TEMP/artifact.tar" ]; then
+            echo "FAIL: artifact.tar was not created in RUNNER_TEMP"
+            exit 1
+          fi
+          echo "PASS: artifact.tar exists"
+
+      - name: Assert tar contains expected files
+        run: |
+          FILES=$(tar -tf "$RUNNER_TEMP/artifact.tar")
+          echo "Files in tar: $FILES"
+          if ! echo "$FILES" | grep -q "index.html"; then
+            echo "FAIL: index.html not found in artifact.tar"
+            exit 1
+          fi
+          echo "PASS: index.html found in artifact.tar"
