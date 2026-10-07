@@ -73,7 +73,7 @@ runs:
       env:
         INPUT_PATH: ${{ inputs.path }}
     - name: Upload artifact
-      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # main
+      uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # main
       with:
         name: github-pages
         path: ${{ runner.temp }}/artifact.tar
