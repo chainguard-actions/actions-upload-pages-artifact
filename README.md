@@ -6,13 +6,13 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 ## Versions
 
-| Version | Tag | Upstream commit |
-|---------|-----|-----------------|
-| v1.0.4 | [`v1.0.4`](https://github.com/chainguard-actions/actions-upload-pages-artifact/tree/v1.0.4) | [`a597aec`](https://github.com/actions/upload-pages-artifact/commit/a597aecd27af1cf14095ccaa29169358e3d91e28) |
-| v2.0.0 | [`v2.0.0`](https://github.com/chainguard-actions/actions-upload-pages-artifact/tree/v2.0.0) | [`a753861`](https://github.com/actions/upload-pages-artifact/commit/a753861a5debcf57bf8b404356158c8e1e33150c) |
-| v3.0.1 | [`v3.0.1`](https://github.com/chainguard-actions/actions-upload-pages-artifact/tree/v3.0.1) | [`56afc60`](https://github.com/actions/upload-pages-artifact/commit/56afc609e74202658d3ffba0e8f6dda462b719fa) |
-| v4.0.0 | [`v4.0.0`](https://github.com/chainguard-actions/actions-upload-pages-artifact/tree/v4.0.0) | [`7b1f4a7`](https://github.com/actions/upload-pages-artifact/commit/7b1f4a764d45c48632c6b24a0339c27f5614fb0b) |
-| v5.0.0 | [`v5.0.0`](https://github.com/chainguard-actions/actions-upload-pages-artifact/tree/v5.0.0) | [`fc324d3`](https://github.com/actions/upload-pages-artifact/commit/fc324d3547104276b827a68afc52ff2a11cc49c9) |
+| Version | Tag | Upstream commit | Hardening report |
+|---------|-----|-----------------|------------------|
+| v1.0.4 | [`v1.0.4`](https://github.com/chainguard-actions/actions-upload-pages-artifact/tree/v1.0.4) | [`a597aec`](https://github.com/actions/upload-pages-artifact/commit/a597aecd27af1cf14095ccaa29169358e3d91e28) | [`HARDENING.md`](https://github.com/chainguard-actions/actions-upload-pages-artifact/blob/v1.0.4/HARDENING.md) |
+| v2.0.0 | [`v2.0.0`](https://github.com/chainguard-actions/actions-upload-pages-artifact/tree/v2.0.0) | [`a753861`](https://github.com/actions/upload-pages-artifact/commit/a753861a5debcf57bf8b404356158c8e1e33150c) | [`HARDENING.md`](https://github.com/chainguard-actions/actions-upload-pages-artifact/blob/v2.0.0/HARDENING.md) |
+| v3.0.1 | [`v3.0.1`](https://github.com/chainguard-actions/actions-upload-pages-artifact/tree/v3.0.1) | [`56afc60`](https://github.com/actions/upload-pages-artifact/commit/56afc609e74202658d3ffba0e8f6dda462b719fa) | [`HARDENING.md`](https://github.com/chainguard-actions/actions-upload-pages-artifact/blob/v3.0.1/HARDENING.md) |
+| v4.0.0 | [`v4.0.0`](https://github.com/chainguard-actions/actions-upload-pages-artifact/tree/v4.0.0) | [`7b1f4a7`](https://github.com/actions/upload-pages-artifact/commit/7b1f4a764d45c48632c6b24a0339c27f5614fb0b) | [`HARDENING.md`](https://github.com/chainguard-actions/actions-upload-pages-artifact/blob/v4.0.0/HARDENING.md) |
+| v5.0.0 | [`v5.0.0`](https://github.com/chainguard-actions/actions-upload-pages-artifact/tree/v5.0.0) | [`fc324d3`](https://github.com/actions/upload-pages-artifact/commit/fc324d3547104276b827a68afc52ff2a11cc49c9) | [`HARDENING.md`](https://github.com/chainguard-actions/actions-upload-pages-artifact/blob/v5.0.0/HARDENING.md) |
 
 ## Privacy
 
