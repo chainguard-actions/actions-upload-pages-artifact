@@ -4,9 +4,8 @@
   "version": "v3.0.1",
   "commit_sha": "56afc609e74202658d3ffba0e8f6dda462b719fa",
   "url": "https://github.com/actions/upload-pages-artifact",
-  "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",
+  "policy_sha": "374911c4be584df24e6da57af2d990570ef0f859",
   "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
   "test_agent_version": "2",
-  "harden_agent_version": "2",
-  "dependency_fingerprint": "sha256:62db619b7c11e87edda012c44565aacb9354bc7a12e121e41feb885d1f0995d3"
+  "harden_agent_version": "2"
 }
